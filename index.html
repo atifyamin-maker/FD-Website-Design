@@ -804,6 +804,7 @@ body.bk-lock{overflow:hidden}
 .cmp-rate{font-family:var(--display);font-weight:600;font-size:19px}
 .cmp-rate.best{color:#1F9D63}
 .cmp-best-tag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.05em;color:#15784B;background:rgba(31,157,99,.13);padding:2px 6px;border-radius:100px;margin-left:6px;vertical-align:middle}
+.bp-senior-row{display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:14px;font-weight:600;color:var(--ink-soft)}
 </style>
 </head>
 <body>
@@ -2086,11 +2087,12 @@ function bpTenures(b,product){var off=(product==='rd')?0.4:0;var R=b.r-off;retur
   {t:'3Y',y:3,r:+(R-0.6).toFixed(2)},
   {t:'5Y',y:5,r:+(R-0.75).toFixed(2)}
 ];}
-function bpMat(){var t=bpTenures(BANKCUR,BANKPROD)[BANKSEL.ti];if(BANKPROD==='rd'){var i=t.r/1200,n=Math.round(t.y*12);return Math.round(BANKSEL.amount*(((Math.pow(1+i,n)-1)/i))*(1+i));}return Math.round(BANKSEL.amount*Math.pow(1+t.r/100/4,4*t.y));}
-function openBank(k,product){var b=null;for(var i=0;i<FD_BANKS.length;i++){if(FD_BANKS[i].k===k)b=FD_BANKS[i];}if(!b)b=FD_BANKS[0];BANKCUR=b;BANKPROD=product||'fd';BANKSEL={amount:(BANKPROD==='rd'?5000:100000),ti:2};renderBank();go('bankpage');window.scrollTo(0,0);}
+function bpMat(){var t=bpTenures(BANKCUR,BANKPROD)[BANKSEL.ti];var rr=t.r+(BANKSEL.senior?0.5:0);if(BANKPROD==='rd'){var i=rr/1200,n=Math.round(t.y*12);return Math.round(BANKSEL.amount*(((Math.pow(1+i,n)-1)/i))*(1+i));}return Math.round(BANKSEL.amount*Math.pow(1+rr/100/4,4*t.y));}
+function openBank(k,product){var b=null;for(var i=0;i<FD_BANKS.length;i++){if(FD_BANKS[i].k===k)b=FD_BANKS[i];}if(!b)b=FD_BANKS[0];BANKCUR=b;BANKPROD=product||'fd';BANKSEL={amount:(BANKPROD==='rd'?5000:100000),ti:2,senior:false};renderBank();go('bankpage');window.scrollTo(0,0);}
 function bpSetAmt(v){BANKSEL.amount=v;renderBank();}
 function bpSetTen(i){BANKSEL.ti=parseInt(i,10);renderBank();}
-function bpInvest(){var t=bpTenures(BANKCUR,BANKPROD)[BANKSEL.ti];openBooking(BANKCUR.k,t.r,t.t,t.y,BANKSEL.amount,BANKPROD);}
+function bpInvest(){var t=bpTenures(BANKCUR,BANKPROD)[BANKSEL.ti];var rr=+(t.r+(BANKSEL.senior?0.5:0)).toFixed(2);openBooking(BANKCUR.k,rr,t.t,t.y,BANKSEL.amount,BANKPROD);}
+function bpSenior(){BANKSEL.senior=!BANKSEL.senior;renderBank();}
 function bpFaq(b){var rd=BANKPROD==='rd';var prod=rd?'recurring deposit':'fixed deposit';var PR=rd?'RD':'FD';var qs=[
   ['What is the compounding frequency of '+(rd?'an RD':'an FD')+' with '+b.n+'?','Interest on '+b.n+' '+prod+'s is compounded quarterly, so you earn interest on your interest every three months.'],
   ['What should I do if I\u2019m facing an issue with my '+PR+'?','You can reach Stable Money support in-app or by email, and we\u2019ll coordinate directly with '+b.n+' on your behalf.'],
@@ -2103,6 +2105,7 @@ function renderBank(){
   var rows=ts.map(function(t){return '<div class="bp-row'+(t.max?' max':'')+'"><div class="bp-ten">'+t.t+(t.max?' <span class="bp-mx">HIGHEST</span>':'')+'</div><div class="g">'+t.r.toFixed(2)+'%</div><div class="g">'+(t.r+0.5).toFixed(2)+'%</div></div>';}).join('');
   var opts=ts.map(function(t,i){return '<option value="'+i+'"'+(i===BANKSEL.ti?' selected':'')+'>'+t.t+' · '+t.r.toFixed(2)+'%</option>';}).join('');
   var mat=bpMat();
+  var effR=sel.r+(BANKSEL.senior?0.5:0);
   var invested=rd?BANKSEL.amount*Math.round(sel.y*12):BANKSEL.amount;
   var gain=mat-invested;
   var cmp=[['SBI',rd?6.65:7.05],['HDFC Bank',rd?6.70:7.10],[b.n.replace('SF Bank','SFB'),cmpR]];
@@ -2112,8 +2115,8 @@ function renderBank(){
   var chipVals=rd?[2000,5000,10000]:[50000,100000,200000];
   var chipsHtml=chipVals.map(function(c){return '<span class="bp-chip'+(BANKSEL.amount===c?' on':'')+'" onclick="bpSetAmt('+c+')">'+inr(c)+(rd?'/mo':'')+'</span>';}).join('');
   var outHtml=rd
-    ? '<div class="bp-fs"><span>Interest rate</span><b class="g">'+sel.r.toFixed(2)+'% p.a.</b></div><div class="bp-fs"><span>Total invested</span><b>'+inr(invested)+'</b></div><div class="bp-fs"><span>Maturity amount</span><b class="g">'+inr(mat)+'</b></div>'
-    : '<div class="bp-fs"><span>Interest rate</span><b class="g">'+sel.r.toFixed(2)+'% p.a.</b></div><div class="bp-fs"><span>Maturity amount</span><b>'+inr(mat)+'</b></div><div class="bp-fs"><span>Interest earned</span><b class="g">'+inr(gain)+'</b></div>';
+    ? '<div class="bp-fs"><span>Interest rate</span><b class="g">'+effR.toFixed(2)+'% p.a.</b></div><div class="bp-fs"><span>Total invested</span><b>'+inr(invested)+'</b></div><div class="bp-fs"><span>Maturity amount</span><b class="g">'+inr(mat)+'</b></div>'
+    : '<div class="bp-fs"><span>Interest rate</span><b class="g">'+effR.toFixed(2)+'% p.a.</b></div><div class="bp-fs"><span>Maturity amount</span><b>'+inr(mat)+'</b></div><div class="bp-fs"><span>Interest earned</span><b class="g">'+inr(gain)+'</b></div>';
   var html='<section class="sec" style="padding-top:100px"><div class="wrap"><div class="bp-grid"><div class="bp-left">'
     +'<div class="bp-hero"><img src="'+FD_LOGO[b.k]+'" alt=""><div><span class="bp-eyebrow">RBI-regulated · Partner bank</span><h1>'+b.n+' '+prodName+'</h1><p>'+(rd?'Start a '+b.n+' Recurring Deposit online with Stable Money — save from ₹500/month and earn up to '+srMax+'% p.a., DICGC-insured up to ₹5 Lakh.':'Book a '+b.n+' FD online with Stable Money — earn up to '+srMax+'% p.a. for senior citizens, DICGC-insured up to ₹5 Lakh. No new bank account needed.')+'</p></div></div>'
     +'<div class="bp-card"><div class="bp-row hd"><div>Tenure</div><div>Regular</div><div>Sr. Citizen</div></div>'+rows+'</div>'
@@ -2128,6 +2131,7 @@ function renderBank(){
       +'<div class="bp-p-lab">'+(rd?'Monthly deposit':'Investment amount')+'</div><input class="bp-amt" id="bpAmt" value="'+inr(BANKSEL.amount)+'">'
       +'<div class="bp-chips">'+chipsHtml+'</div>'
       +'<div class="bp-p-lab" style="margin-top:18px">Tenure</div><select class="bp-sel" onchange="bpSetTen(this.value)">'+opts+'</select>'
+      +'<div class="bp-senior-row"><span>Senior citizen (60+)</span><span class="bk-tog'+(BANKSEL.senior?' on':'')+'" onclick="bpSenior()"></span></div>'
       +'<div class="bp-p-out">'+outHtml+'</div>'
       +'<button class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-top:18px" onclick="bpInvest()">'+(rd?'Start RD':'Invest now')+' <span class="arrow">→</span></button>'
       +'<div class="bp-p-trust">✓ DICGC insured up to ₹5 Lakh</div>'
